@@ -43,62 +43,11 @@ const starterPrompts = [
   "What is your background?",
 ];
 
-function getBotReply(message: string): string {
-  const input = message.toLowerCase();
-
-  if (
-    input.includes("service") ||
-    input.includes("offer") ||
-    input.includes("freelance") ||
-    input.includes("help me")
-  ) {
-    return "I offer AI chatbot development, analytics dashboards, business automation, internal tools, and AI/data solutions connected to real workflows such as CRM, support, and operations.";
-  }
-
-  if (
-    input.includes("project") ||
-    input.includes("build") ||
-    input.includes("make") ||
-    input.includes("develop")
-  ) {
-    return "I can build portfolio websites, AI assistants, customer support copilots, dashboard/reporting tools, workflow automation systems, and business-focused web apps with data and AI features.";
-  }
-
-  if (
-    input.includes("background") ||
-    input.includes("experience") ||
-    input.includes("who are you")
-  ) {
-    return "Saif has 4.5+ years of ERP and CRM consulting experience and is now focused on Data Science, AI, analytics, and enterprise product systems. That mix of business and technical thinking is the core differentiator.";
-  }
-
-  if (
-    input.includes("tech") ||
-    input.includes("stack") ||
-    input.includes("technology")
-  ) {
-    return "The portfolio uses Next.js, Tailwind CSS, TypeScript, GitHub, and Vercel. Broader work includes Python, SQL, AI APIs, analytics tooling, and enterprise platforms such as Dynamics 365.";
-  }
-
-  if (
-    input.includes("contact") ||
-    input.includes("email") ||
-    input.includes("hire") ||
-    input.includes("reach")
-  ) {
-    return "You can reach Saif through the contact section on this site, LinkedIn, GitHub, or by email at saif.mangan@outlook.com.";
-  }
-
-  if (input.includes("chatbot") || input.includes("ai")) {
-    return "A strong client use case is an AI chatbot for support, internal knowledge, lead qualification, CRM workflows, or operations. That is one of the best service angles for this portfolio.";
-  }
-
-  return "I can answer questions about Saif’s background, services, projects, tech stack, and how to get in touch. Try asking about services, projects, or experience.";
-}
 
 export default function Home() {
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [input, setInput] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
   const [messages, setMessages] = useState<ChatMessage[]>([
     {
       role: "assistant",
@@ -107,25 +56,55 @@ export default function Home() {
     },
   ]);
 
-  const canSend = useMemo(() => input.trim().length > 0, [input]);
+  const canSend = useMemo(() => input.trim().length > 0 && !isLoading, [input, isLoading]);
 
-  const sendMessage = (text?: string) => {
+  const sendMessage = async (text?: string) => {
     const messageToSend = (text ?? input).trim();
-    if (!messageToSend) return;
+    if (!messageToSend || isLoading) return;
 
     const userMessage: ChatMessage = {
       role: "user",
       content: messageToSend,
     };
 
-    const assistantMessage: ChatMessage = {
-      role: "assistant",
-      content: getBotReply(messageToSend),
-    };
-
-    setMessages((prev) => [...prev, userMessage, assistantMessage]);
+    setMessages((prev) => [...prev, userMessage]);
     setInput("");
     setIsChatOpen(true);
+    setIsLoading(true);
+
+    try {
+      const res = await fetch("/api/chat", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ message: messageToSend }),
+      });
+
+      const data = await res.json();
+
+      const assistantMessage: ChatMessage = {
+        role: "assistant",
+        content:
+          data?.reply ||
+          "I couldn't generate a response right now. Please try again.",
+      };
+
+      setMessages((prev) => [...prev, assistantMessage]);
+    } catch (error) {
+      console.error(error);
+
+      setMessages((prev) => [
+        ...prev,
+        {
+          role: "assistant",
+          content:
+            "Something went wrong while contacting the AI assistant. Please try again.",
+        },
+      ]);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -391,7 +370,7 @@ export default function Home() {
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={(e) => {
-                  if (e.key === "Enter") {
+                  if (e.key === "Enter" && !isLoading) {
                     sendMessage();
                   }
                 }}
@@ -401,10 +380,10 @@ export default function Home() {
               <button
                 type="button"
                 onClick={() => sendMessage()}
-                disabled={!canSend}
+                disabled={!canSend || isLoading}
                 className="rounded-full bg-white px-4 py-3 text-sm font-semibold text-black transition hover:opacity-95 disabled:cursor-not-allowed disabled:opacity-40"
               >
-                Send
+                {isLoading ? "Thinking..." : "Send"}
               </button>
             </div>
           </div>
