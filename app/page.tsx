@@ -1,3 +1,12 @@
+"use client";
+
+import { useMemo, useState } from "react";
+
+type ChatMessage = {
+  role: "user" | "assistant";
+  content: string;
+};
+
 const stats = [
   "4.5+ years consulting",
   "MSc Data Science & AI",
@@ -28,7 +37,97 @@ const projects = [
   },
 ];
 
+const starterPrompts = [
+  "What services do you offer?",
+  "What kind of projects can you build?",
+  "What is your background?",
+];
+
+function getBotReply(message: string): string {
+  const input = message.toLowerCase();
+
+  if (
+    input.includes("service") ||
+    input.includes("offer") ||
+    input.includes("freelance") ||
+    input.includes("help me")
+  ) {
+    return "I offer AI chatbot development, analytics dashboards, business automation, internal tools, and AI/data solutions connected to real workflows such as CRM, support, and operations.";
+  }
+
+  if (
+    input.includes("project") ||
+    input.includes("build") ||
+    input.includes("make") ||
+    input.includes("develop")
+  ) {
+    return "I can build portfolio websites, AI assistants, customer support copilots, dashboard/reporting tools, workflow automation systems, and business-focused web apps with data and AI features.";
+  }
+
+  if (
+    input.includes("background") ||
+    input.includes("experience") ||
+    input.includes("who are you")
+  ) {
+    return "Saif has 4.5+ years of ERP and CRM consulting experience and is now focused on Data Science, AI, analytics, and enterprise product systems. That mix of business and technical thinking is the core differentiator.";
+  }
+
+  if (
+    input.includes("tech") ||
+    input.includes("stack") ||
+    input.includes("technology")
+  ) {
+    return "The portfolio uses Next.js, Tailwind CSS, TypeScript, GitHub, and Vercel. Broader work includes Python, SQL, AI APIs, analytics tooling, and enterprise platforms such as Dynamics 365.";
+  }
+
+  if (
+    input.includes("contact") ||
+    input.includes("email") ||
+    input.includes("hire") ||
+    input.includes("reach")
+  ) {
+    return "You can reach Saif through the contact section on this site, LinkedIn, GitHub, or by email at saif.mangan@outlook.com.";
+  }
+
+  if (input.includes("chatbot") || input.includes("ai")) {
+    return "A strong client use case is an AI chatbot for support, internal knowledge, lead qualification, CRM workflows, or operations. That is one of the best service angles for this portfolio.";
+  }
+
+  return "I can answer questions about Saif’s background, services, projects, tech stack, and how to get in touch. Try asking about services, projects, or experience.";
+}
+
 export default function Home() {
+  const [isChatOpen, setIsChatOpen] = useState(false);
+  const [input, setInput] = useState("");
+  const [messages, setMessages] = useState<ChatMessage[]>([
+    {
+      role: "assistant",
+      content:
+        "Hi — I’m Saif’s portfolio assistant. Ask about services, projects, experience, or how to work together.",
+    },
+  ]);
+
+  const canSend = useMemo(() => input.trim().length > 0, [input]);
+
+  const sendMessage = (text?: string) => {
+    const messageToSend = (text ?? input).trim();
+    if (!messageToSend) return;
+
+    const userMessage: ChatMessage = {
+      role: "user",
+      content: messageToSend,
+    };
+
+    const assistantMessage: ChatMessage = {
+      role: "assistant",
+      content: getBotReply(messageToSend),
+    };
+
+    setMessages((prev) => [...prev, userMessage, assistantMessage]);
+    setInput("");
+    setIsChatOpen(true);
+  };
+
   return (
     <main className="relative min-h-screen overflow-x-hidden bg-[#0A0A0B] text-white">
       <div className="absolute inset-0 -z-10 bg-[#0A0A0B]" />
@@ -108,12 +207,13 @@ export default function Home() {
               GitHub
             </a>
 
-            <a
-              href="#contact"
+            <button
+              type="button"
+              onClick={() => setIsChatOpen(true)}
               className="rounded-full border border-white/12 bg-white/[0.03] px-7 py-3 text-sm font-semibold text-white transition duration-200 hover:-translate-y-0.5 hover:bg-white/[0.06]"
             >
-              Contact
-            </a>
+              Ask AI Assistant
+            </button>
           </div>
         </div>
 
@@ -239,6 +339,77 @@ export default function Home() {
           </div>
         </div>
       </section>
+
+      <button
+        type="button"
+        onClick={() => setIsChatOpen((prev) => !prev)}
+        className="fixed bottom-6 right-6 z-30 rounded-full border border-white/10 bg-white px-5 py-3 text-sm font-semibold text-black shadow-2xl transition hover:-translate-y-0.5 hover:opacity-95"
+      >
+        {isChatOpen ? "Close Assistant" : "Chat with AI"}
+      </button>
+
+      {isChatOpen && (
+        <div className="fixed bottom-24 right-6 z-30 w-[calc(100vw-3rem)] max-w-sm overflow-hidden rounded-[1.75rem] border border-white/10 bg-[#101013]/95 shadow-[0_30px_80px_rgba(0,0,0,0.45)] backdrop-blur-xl">
+          <div className="border-b border-white/10 px-5 py-4">
+            <p className="text-sm font-semibold text-white">Portfolio AI Assistant</p>
+            <p className="mt-1 text-xs text-white/50">
+              Ask about services, projects, experience, or contact.
+            </p>
+          </div>
+
+          <div className="max-h-[380px] space-y-3 overflow-y-auto px-4 py-4">
+            {messages.map((message, index) => (
+              <div
+                key={`${message.role}-${index}`}
+                className={`max-w-[88%] rounded-2xl px-4 py-3 text-sm leading-6 ${
+                  message.role === "assistant"
+                    ? "bg-white/[0.05] text-white/80"
+                    : "ml-auto bg-white text-black"
+                }`}
+              >
+                {message.content}
+              </div>
+            ))}
+          </div>
+
+          <div className="border-t border-white/10 px-4 py-3">
+            <div className="mb-3 flex flex-wrap gap-2">
+              {starterPrompts.map((prompt) => (
+                <button
+                  key={prompt}
+                  type="button"
+                  onClick={() => sendMessage(prompt)}
+                  className="rounded-full border border-white/10 bg-white/[0.03] px-3 py-1.5 text-xs text-white/65 transition hover:bg-white/[0.07] hover:text-white"
+                >
+                  {prompt}
+                </button>
+              ))}
+            </div>
+
+            <div className="flex items-center gap-2">
+              <input
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    sendMessage();
+                  }
+                }}
+                placeholder="Ask something..."
+                className="flex-1 rounded-full border border-white/10 bg-white/[0.03] px-4 py-3 text-sm text-white outline-none placeholder:text-white/35"
+              />
+              <button
+                type="button"
+                onClick={() => sendMessage()}
+                disabled={!canSend}
+                className="rounded-full bg-white px-4 py-3 text-sm font-semibold text-black transition hover:opacity-95 disabled:cursor-not-allowed disabled:opacity-40"
+              >
+                Send
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </main>
   );
 }
