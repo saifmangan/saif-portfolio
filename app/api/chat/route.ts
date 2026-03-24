@@ -1,12 +1,21 @@
 import OpenAI from "openai";
 import { NextResponse } from "next/server";
 
-const client = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
+export const runtime = "nodejs";
+
 
 export async function POST(req: Request) {
   try {
+    const apiKey = process.env.OPENAI_API_KEY;
+
+    if (!apiKey) {
+      return NextResponse.json(
+        { error: "OPENAI_API_KEY is not configured." },
+        { status: 500 }
+      );
+    }
+
+    const client = new OpenAI({ apiKey });
     const body = await req.json();
     const message = body?.message?.trim();
 
@@ -18,7 +27,9 @@ export async function POST(req: Request) {
     }
 
     const response = await client.responses.create({
-      model: "gpt-5.4",
+      model: "gpt-4.1-mini",
+      temperature: 0.6,
+      max_output_tokens: 300,
       input: [
         {
           role: "system",
@@ -48,9 +59,9 @@ Facts about Saif:
       ],
     });
 
-    return NextResponse.json({
-      reply: response.output_text,
-    });
+    const reply = response.output_text || "Sorry — I couldn't generate a reply.";
+
+    return NextResponse.json({ reply });
   } catch (error) {
     console.error("OpenAI chat error:", error);
     return NextResponse.json(
