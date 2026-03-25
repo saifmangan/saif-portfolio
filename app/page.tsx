@@ -338,7 +338,7 @@ export default function Home() {
         onClick={() => setIsChatOpen((prev) => !prev)}
         className="fixed bottom-6 right-6 z-30 rounded-full border border-white/10 bg-white px-5 py-3 text-sm font-semibold text-black shadow-2xl transition hover:-translate-y-0.5 hover:opacity-95"
       >
-        {isChatOpen ? "Close Assistant" : "Chat with AI"}
+        {isChatOpen ? "Close Assistant" : "Quick Questions?"}
       </button>
 
       {isChatOpen && (
