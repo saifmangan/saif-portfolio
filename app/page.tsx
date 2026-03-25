@@ -5,6 +5,7 @@ import { useMemo, useState } from "react";
 type ChatMessage = {
   role: "user" | "assistant";
   content: string;
+  isContactCta?: boolean;
 };
 
 const stats = [
@@ -43,6 +44,12 @@ const starterPrompts = [
   "What is your background?",
 ];
 
+const fallbackMessage: ChatMessage = {
+  role: "assistant",
+  content: "For anything else, please email me at",
+  isContactCta: true,
+};
+
 
 export default function Home() {
   const [isChatOpen, setIsChatOpen] = useState(false);
@@ -52,7 +59,7 @@ export default function Home() {
     {
       role: "assistant",
       content:
-        "Hi — I’m Saif’s portfolio assistant. Ask about services, projects, experience, or how to work together.",
+        "Hi — I’m Saif’s portfolio assistant. Ask about my background, services, or projects.",
     },
   ]);
 
@@ -72,49 +79,46 @@ export default function Home() {
     setIsChatOpen(true);
     setIsLoading(true);
 
-    try {
-      const res = await fetch("/api/chat", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ message: messageToSend }),
-      });
+    const normalized = messageToSend.toLowerCase();
 
-      const data = await res.json().catch(() => null);
+    let assistantMessage: ChatMessage;
 
-      if (!res.ok) {
-        throw new Error(
-          data?.error || `Request failed with status ${res.status}`
-        );
-      }
-
-      const assistantMessage: ChatMessage = {
+    if (
+      normalized.includes("background") ||
+      normalized.includes("about") ||
+      normalized.includes("experience")
+    ) {
+      assistantMessage = {
         role: "assistant",
         content:
-          data?.reply ||
-          "I’m having trouble responding right now. Please email me at saif.mangan@outlook.com",
+          "I’m Saif Mangan, an MSc Data Science & AI student with 4.5+ years of ERP and CRM consulting experience. I focus on AI systems, analytics, enterprise workflows, and product thinking, combining business understanding with technical execution.",
       };
-
-      setMessages((prev) => [...prev, assistantMessage]);
-    } catch (error) {
-      console.error(error);
-
-      const errorMessage =
-        error instanceof Error
-          ? error.message
-          : "I’m having trouble responding right now. Please email me at saif.mangan@outlook.com";
-
-      setMessages((prev) => [
-        ...prev,
-        {
-          role: "assistant",
-          content: errorMessage,
-        },
-      ]);
-    } finally {
-      setIsLoading(false);
+    } else if (
+      normalized.includes("service") ||
+      normalized.includes("offer") ||
+      normalized.includes("work together")
+    ) {
+      assistantMessage = {
+        role: "assistant",
+        content:
+          "I offer AI chatbot development, analytics dashboards, workflow automation, internal business tools, and AI/data solutions for enterprise-style use cases. My work is focused on solving real operational problems, not gimmicky demos.",
+      };
+    } else if (
+      normalized.includes("project") ||
+      normalized.includes("built") ||
+      normalized.includes("build")
+    ) {
+      assistantMessage = {
+        role: "assistant",
+        content:
+          "My featured work includes an AI Ticket Triage Assistant, a Dynamics 365 AI Service Copilot concept, and GitHub-based projects across AI, data science, analytics, and engineering experiments.",
+      };
+    } else {
+      assistantMessage = fallbackMessage;
     }
+
+    setMessages((prev) => [...prev, assistantMessage]);
+    setIsLoading(false);
   };
 
   return (
@@ -342,7 +346,7 @@ export default function Home() {
           <div className="border-b border-white/10 px-5 py-4">
             <p className="text-sm font-semibold text-white">Portfolio AI Assistant</p>
             <p className="mt-1 text-xs text-white/50">
-              Ask about services, projects, experience, or contact.
+              Ask about background, services, or projects.
             </p>
           </div>
 
@@ -356,7 +360,19 @@ export default function Home() {
                     : "ml-auto bg-white text-black"
                 }`}
               >
-                {message.content}
+                {message.isContactCta ? (
+                  <>
+                    {message.content}{" "}
+                    <a
+                      href="mailto:saif.mangan@outlook.com"
+                      className="underline underline-offset-4 hover:text-white"
+                    >
+                      saif.mangan@outlook.com
+                    </a>
+                  </>
+                ) : (
+                  message.content
+                )}
               </div>
             ))}
           </div>
@@ -384,7 +400,7 @@ export default function Home() {
                     sendMessage();
                   }
                 }}
-                placeholder="Ask something..."
+                placeholder="Ask about background, services, or projects..."
                 className="flex-1 rounded-full border border-white/10 bg-white/[0.03] px-4 py-3 text-sm text-white outline-none placeholder:text-white/35"
               />
               <button
