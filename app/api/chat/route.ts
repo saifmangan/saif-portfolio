@@ -3,7 +3,6 @@ import { NextResponse } from "next/server";
 
 export const runtime = "nodejs";
 
-
 export async function POST(req: Request) {
   try {
     const apiKey = process.env.OPENAI_API_KEY;
@@ -15,7 +14,6 @@ export async function POST(req: Request) {
       );
     }
 
-    const client = new OpenAI({ apiKey });
     const body = await req.json();
     const message = body?.message?.trim();
 
@@ -26,46 +24,34 @@ export async function POST(req: Request) {
       );
     }
 
-    const response = await client.responses.create({
-      model: "gpt-4.1-mini",
-      temperature: 0.6,
-      max_output_tokens: 300,
-      input: [
+    const client = new OpenAI({ apiKey });
+
+    const completion = await client.chat.completions.create({
+      model: "gpt-4o-mini",
+      messages: [
         {
           role: "system",
-          content: `
-You are Saif Mangan's portfolio assistant.
-
-Your job:
-- Answer only questions about Saif, his services, projects, background, tech stack, and how to contact him.
-- Keep answers concise, sharp, and business-focused.
-- Position Saif as someone who builds AI chatbots, analytics dashboards, internal tools, workflow automation, and business-facing AI/data solutions.
-- If asked something unrelated, politely steer back to Saif's portfolio and services.
-
-Facts about Saif:
-- 4.5+ years of ERP and CRM consulting experience
-- MSc Data Science & AI
-- Focused on AI systems, analytics, enterprise workflows, and product thinking
-- Tech stack includes Next.js, Tailwind CSS, TypeScript, Python, SQL, GitHub, Vercel, and enterprise platforms like Dynamics 365
-- Contact email: saif.mangan@outlook.com
-- GitHub: https://github.com/saifmangan
-- LinkedIn: https://www.linkedin.com/in/saif-ali-khan-mangan/
-          `,
+          content:
+            "You are Saif Mangan's portfolio assistant. Answer only about Saif's services, projects, background, tech stack, and contact. Keep answers concise, sharp, and professional.",
         },
         {
           role: "user",
           content: message,
         },
       ],
+      temperature: 0.7,
     });
 
-    const reply = response.output_text || "Sorry — I couldn't generate a reply.";
+    const reply =
+      completion.choices?.[0]?.message?.content ??
+      "Sorry — I couldn't generate a reply.";
 
     return NextResponse.json({ reply });
-  } catch (error) {
-    console.error("OpenAI chat error:", error);
+  } catch (error: any) {
+    console.error("API route error:", error);
+
     return NextResponse.json(
-      { error: "Something went wrong while generating a reply." },
+      { error: error?.message || "Internal server error" },
       { status: 500 }
     );
   }
