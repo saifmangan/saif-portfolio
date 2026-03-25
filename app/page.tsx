@@ -81,25 +81,35 @@ export default function Home() {
         body: JSON.stringify({ message: messageToSend }),
       });
 
-      const data = await res.json();
+      const data = await res.json().catch(() => null);
+
+      if (!res.ok) {
+        throw new Error(
+          data?.error || `Request failed with status ${res.status}`
+        );
+      }
 
       const assistantMessage: ChatMessage = {
         role: "assistant",
         content:
           data?.reply ||
-          "I couldn't generate a response right now. Please try again.",
+          "I’m having trouble responding right now. Please email me at saif.mangan@outlook.com",
       };
 
       setMessages((prev) => [...prev, assistantMessage]);
     } catch (error) {
       console.error(error);
 
+      const errorMessage =
+        error instanceof Error
+          ? error.message
+          : "I’m having trouble responding right now. Please email me at saif.mangan@outlook.com";
+
       setMessages((prev) => [
         ...prev,
         {
           role: "assistant",
-          content:
-            "Something went wrong while contacting the AI assistant. Please try again.",
+          content: errorMessage,
         },
       ]);
     } finally {

@@ -44,7 +44,7 @@ export async function POST(req: Request) {
 
     const reply =
       completion.choices?.[0]?.message?.content ??
-      "Sorry — I couldn't generate a reply.";
+      "I’m having trouble responding right now. Please email me at saif.mangan@outlook.com";
 
     return NextResponse.json({ reply });
   } catch (error: any) {
